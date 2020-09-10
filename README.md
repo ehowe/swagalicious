@@ -27,8 +27,6 @@ Add the following to your `spec_helper.rb` or add a new `swagger_helper.rb`
 ```ruby
 require 'swagalicious`
 
-DEFINITIONS = Oj.load(File.read(File.expand_path("docs/definitions.json", __dir__))).freeze
-
 RSpec.configure do |c|
   c.swagger_root = "public/swagger_docs" # This is the relative path where the swagger docs will be output
   c.swagger_docs = {
