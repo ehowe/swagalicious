@@ -57,7 +57,7 @@ end
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/eugene@xtreme-computers.net/swagalicious.
+Bug reports and pull requests are welcome on GitHub at https://github.com/ehowe/swagalicious.
 
 
 ## License
