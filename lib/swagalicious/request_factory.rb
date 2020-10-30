@@ -1,7 +1,7 @@
 require "faraday"
 require "faraday/adapter/rack"
 
-module Swagalicious
+class Swagalicious
   class RequestFactory
     def initialize(config = ::Swagalicious.config)
       @config = config

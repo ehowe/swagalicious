@@ -1,6 +1,6 @@
 require "json-schema"
 
-module Swagalicious
+class Swagalicious
   class ExtendedSchema < JSON::Schema::Draft4
     def initialize
       super

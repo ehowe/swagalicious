@@ -2,67 +2,71 @@
 
 require_relative "../core/ext/hash"
 
-module Swagalicious
+class Swagalicious
   class SwaggerFormatter
-    RSpec::Core::Formatters.register self, :example_group_finished, :stop
+    RSpec::Core::Formatters.register self, :stop
 
-    def initialize(output, config = Swagalicious.config)
+    def config
+      @config ||= Swagalicious.config
+    end
+
+    def initialize(output, config = nil)
       @output = output
       @config = config
 
       @output.puts "Generating Swagger docs ..."
     end
 
-    def example_group_finished(notification)
-      metadata = notification.group.metadata
+    def merge_metadata_to_document(doc, example)
+       metadata = example.metadata
+       # !metadata[:document] won"t work, since nil means we should generate
+       # docs.
+       return {} if metadata[:document] == false
+       return {} unless metadata.key?(:response)
+       # This is called multiple times per file!
+       # metadata[:operation] is also re-used between examples within file
+       # therefore be careful NOT to modify its content here.
+       upgrade_servers!(doc)
+       upgrade_oauth!(doc)
+       upgrade_response_produces!(doc, metadata)
+       upgrade_request_type!(metadata)
 
-      # !metadata[:document] won"t work, since nil means we should generate
-      # docs.
-      return if metadata[:document] == false
-      return unless metadata.key?(:response)
+       unless doc_version(doc).start_with?("2")
+         doc[:paths]&.each_pair do |_k, v|
+           v.each_pair do |_verb, value|
+             is_hash = value.is_a?(Hash)
+             if is_hash && value.dig(:parameters)
+               schema_param = value.dig(:parameters)&.find { |p| (p[:in] == :body || p[:in] == :formData) && p[:schema] }
+               mime_list    = value.dig(:consumes)
+               if value && schema_param && mime_list
+                 value[:requestBody] = { content: {} } unless value.dig(:requestBody, :content)
+                 mime_list.each do |mime|
+                   value[:requestBody][:content][mime] = { schema: schema_param[:schema] }
+                 end
+               end
 
-      swagger_doc = @config.get_swagger_doc(metadata[:swagger_doc])
+               value[:parameters].reject! { |p| p[:in] == :body || p[:in] == :formData }
+             end
+             remove_invalid_operation_keys!(value)
+           end
+         end
+       end
 
-      # This is called multiple times per file!
-      # metadata[:operation] is also re-used between examples within file
-      # therefore be careful NOT to modify its content here.
-      upgrade_request_type!(metadata)
-      upgrade_servers!(swagger_doc)
-      upgrade_oauth!(swagger_doc)
-      upgrade_response_produces!(swagger_doc, metadata)
-
-      swagger_doc.deep_merge!(metadata_to_swagger(metadata))
+       doc.deep_merge!(metadata_to_swagger(metadata))
     end
 
-    def stop(_notification = nil)
-      @config.swagger_docs.each do |url_path, doc|
-        unless doc_version(doc).start_with?("2")
-          doc[:paths]&.each_pair do |_k, v|
-            v.each_pair do |_verb, value|
-              is_hash = value.is_a?(Hash)
-              if is_hash && value.dig(:parameters)
-                schema_param = value.dig(:parameters)&.find { |p| (p[:in] == :body || p[:in] == :formData) && p[:schema] }
-                mime_list    = value.dig(:consumes)
-                if value && schema_param && mime_list
-                  value[:requestBody] = { content: {} } unless value.dig(:requestBody, :content)
-                  mime_list.each do |mime|
-                    value[:requestBody][:content][mime] = { schema: schema_param[:schema] }
-                  end
-                end
+    def stop(notification = nil)
+      config.swagger_docs.each do |url_path, doc|
+        examples = notification.examples.select { |e| e.metadata[:swagger_doc] == url_path }
 
-                value[:parameters].reject! { |p| p[:in] == :body || p[:in] == :formData }
-              end
-              remove_invalid_operation_keys!(value)
-            end
-          end
-        end
+        merged_doc = examples.each_with_object(doc) { |e, doc| doc = doc.deep_merge!(merge_metadata_to_document(doc, e)) }
 
-        file_path = File.join(@config.swagger_root, url_path)
+        file_path = File.join(config.swagger_root, url_path)
         dirname   = File.dirname(file_path)
         FileUtils.mkdir_p dirname unless File.exist?(dirname)
 
         File.open(file_path, "w") do |file|
-          file.write(pretty_generate(doc))
+          file.write(pretty_generate(merged_doc))
         end
 
         @output.puts "Swagger doc generated at #{file_path}"
@@ -72,7 +76,7 @@ module Swagalicious
     private
 
     def pretty_generate(doc)
-      if @config.swagger_format == :yaml
+      if config.swagger_format == :yaml
         clean_doc = yaml_prepare(doc)
         YAML.dump(clean_doc)
       else # config errors are thrown in "def swagger_format", no throw needed here
@@ -103,7 +107,7 @@ module Swagalicious
     end
 
     def doc_version(doc)
-      doc[:openapi] || doc[:swagger] || "3"
+      doc[:openapi] || doc[:swagger] || "3.0.0"
     end
 
     def upgrade_response_produces!(swagger_doc, metadata)

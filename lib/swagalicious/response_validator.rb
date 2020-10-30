@@ -1,6 +1,6 @@
 require "json"
 
-module Swagalicious
+class Swagalicious
   class UnexpectedResponse < StandardError; end
 
   class ResponseValidator

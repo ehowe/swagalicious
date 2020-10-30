@@ -5,7 +5,7 @@ require "oj"
 
 require_relative "response_validator"
 
-module Swagalicious
+class Swagalicious
   module ExampleHelpers
     include Rack::Test::Methods
 

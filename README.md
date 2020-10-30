@@ -31,7 +31,7 @@ RSpec.configure do |c|
   c.swagger_root = "public/swagger_docs" # This is the relative path where the swagger docs will be output
   c.swagger_docs = {
     "path/to/swagger_doc.json" => {
-      swagger:  "3.0",
+      openapi:  "3.0.3",
       basePath: "/api/",
       version:  "v1",
       info:     {

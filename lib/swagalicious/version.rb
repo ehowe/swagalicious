@@ -1,3 +1,3 @@
-module Swagalicious
-  VERSION = "0.1.0"
+class Swagalicious
+  VERSION = "0.2.0"
 end

@@ -1,4 +1,4 @@
-module Swagalicious
+class Swagalicious
   module ExampleGroupHelpers
     def path(template, metadata={}, &block)
       metadata[:path_item] = { template: template }

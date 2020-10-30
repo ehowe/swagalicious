@@ -2,8 +2,12 @@ require "rspec/core"
 
 require_relative "swagalicious/version"
 
-module Swagalicious
+class Swagalicious
   class Error < StandardError; end
+
+  def self.config
+    @config ||= Swagalicious::Configuration.new(RSpec.configuration)
+  end
 
   require_relative "swagalicious/configuration"
   require_relative "swagalicious/example_group_helpers"
@@ -22,9 +26,5 @@ module Swagalicious
     c.add_setting :swagger_dry_run
     c.extend Swagalicious::ExampleGroupHelpers, type: :doc
     c.include Swagalicious::ExampleHelpers, type: :doc
-  end
-
-  def self.config
-    @config ||= Swagalicious::Configuration.new(RSpec.configuration)
   end
 end

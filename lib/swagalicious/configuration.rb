@@ -1,4 +1,4 @@
-module Swagalicious
+class Swagalicious
   class ConfigurationError < StandardError; end
 
   class Configuration
