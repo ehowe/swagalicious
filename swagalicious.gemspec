@@ -24,9 +24,9 @@ Gem::Specification.new do |spec|
   end
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "faraday",     "~> 1.0.1"
+  spec.add_dependency "faraday",     "~> 1.3.0"
   spec.add_dependency "json-schema", "~> 2.8.1"
-  spec.add_dependency "oj",          "~> 3.10.14"
+  spec.add_dependency "oj",          "~> 3.11.0"
   spec.add_dependency "rack-test",   "~> 1.1.0"
-  spec.add_dependency "rspec",       "~> 3.9.0"
+  spec.add_dependency "rspec",       "~> 3.10.0"
 end
