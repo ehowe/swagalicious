@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    swagalicious (0.2.0)
+    swagalicious (0.3.1)
       faraday (~> 1.3.0)
       json-schema (~> 2.8.1)
       oj (~> 3.11.0)

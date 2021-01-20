@@ -9,15 +9,13 @@ describe Swagalicious::SwaggerFormatter do
   before do
     allow(config).to receive(:swagger_root).and_return(swagger_root)
   end
-  let(:config) { double("config") }
+  let(:config)       { double("config") }
   let(:output)       { double("output").as_null_object }
   let(:swagger_root) { File.expand_path("tmp/swagger", __dir__) }
 
   describe "#example_group_finished(notification)" do
     before do
       allow(config).to receive(:get_swagger_doc).and_return(swagger_doc)
-
-      formatter.example_group_finished(notification)
     end
 
     subject { formatter.example_group_finished(notification) }
@@ -73,7 +71,6 @@ describe Swagalicious::SwaggerFormatter do
       let(:document) { nil }
 
       it "converts query and path params, type: to schema: { type: }" do |example|
-        binding.pry
         expect(subject.slice(:paths)).to match(
           paths: {
             "/blogs" => {
