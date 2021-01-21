@@ -44,7 +44,7 @@ class Swagalicious
         .merge(schemas)
 
       errors = JSON::Validator.fully_validate(validation_schema, body)
-      raise UnexpectedResponse, "Expected response body to match schema: #{errors[0]}" if errors.any?
+      raise UnexpectedResponse, "Expected response body to match schema: #{errors.join(", ")}" unless errors.empty?
     end
 
     def definitions_or_component_schemas(swagger_doc, version)

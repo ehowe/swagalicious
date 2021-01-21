@@ -1,6 +1,6 @@
 require "rspec/core"
 
-require_relative "swagalicious/version"
+require_relative "./swagalicious/version"
 
 class Swagalicious
   class Error < StandardError; end
@@ -9,13 +9,13 @@ class Swagalicious
     @config ||= Swagalicious::Configuration.new(RSpec.configuration)
   end
 
-  require_relative "swagalicious/configuration"
-  require_relative "swagalicious/example_group_helpers"
-  require_relative "swagalicious/example_helpers"
-  require_relative "swagalicious/extended_schema"
-  require_relative "swagalicious/request_factory"
-  require_relative "swagalicious/response_validator"
-  require_relative "swagalicious/swagger_formatter"
+  require_relative "./swagalicious/configuration"
+  require_relative "./swagalicious/example_group_helpers"
+  require_relative "./swagalicious/example_helpers"
+  require_relative "./swagalicious/extended_schema"
+  require_relative "./swagalicious/request_factory"
+  require_relative "./swagalicious/response_validator"
+  require_relative "./swagalicious/swagger_formatter"
 
   ::RSpec::Core::ExampleGroup.define_example_group_method :path
 

@@ -7,99 +7,63 @@ describe Swagalicious::SwaggerFormatter do
 
   # Mock out some infrastructure
   before do
-    allow(config).to receive(:swagger_root).and_return(swagger_root)
+    FileUtils.rm_r(File.join(swagger_root, output_file)) if File.exist?(File.join(swagger_root, output_file))
   end
-  let(:config)       { double("config") }
+
+  let(:config)       { build(:config) }
   let(:output)       { double("output").as_null_object }
-  let(:swagger_root) { File.expand_path("tmp/swagger", __dir__) }
+  let(:swagger_root) { config.swagger_root }
+  let(:swagger_doc)  { config.swagger_docs.values.first }
+  let(:output_file)  { config.swagger_docs.keys.first }
 
-  describe "#example_group_finished(notification)" do
-    before do
-      allow(config).to receive(:get_swagger_doc).and_return(swagger_doc)
-    end
+  describe "#stop(notification)" do
+    subject { formatter.stop(notification) }
 
-    subject { formatter.example_group_finished(notification) }
-
-    let(:notification) { OpenStruct.new(group: OpenStruct.new(metadata: api_metadata)) }
-    let(:api_metadata) do
-      {
-        path_item: { template: "/blogs", parameters: [{ type: :string }] },
-        operation: { verb: :post, summary: "Creates a blog", parameters: [{ type: :string }] },
-        response:  { code: "201", description: "blog created", headers: { type: :string }, schema: { "$ref" => "#/definitions/blog" } },
-        document:  document
-      }
-    end
+    let(:notification) { build(:notification) }
 
     context "with the document tag set to false" do
-      let(:swagger_doc) { { swagger: "3.0" } }
       let(:document)    { false }
 
       it "does not update the swagger doc" do
-        expect(swagger_doc).to match({ swagger: "3.0" })
+        expect(swagger_doc).to match({ openapi: "3.0.1" })
       end
     end
 
     context "with metadata upgrades for 3.0" do
       let(:swagger_doc) do
         {
-          openapi:    "3.0.1",
-          basePath:   "/foo",
-          schemes:    ["http", "https"],
-          host:       "api.example.com",
-          produces:   ["application/vnd.my_mime", "application/json"],
-          components: {
-            securitySchemes: {
-              myClientCredentials: {
-                type:      :oauth2,
-                flow:      :application,
-                token_url: :somewhere
-              },
-              myAuthorizationCode: {
-                type:      :oauth2,
-                flow:      :accessCode,
-                token_url: :somewhere
-              },
-              myImplicit:          {
-                type:      :oauth2,
-                flow:      :implicit,
-                token_url: :somewhere
+          "test.json" => {
+            openapi:    "3.0.1",
+            produces:   ["application/vnd.my_mime", "application/json"],
+            servers:    { urls: [ "http://api.example.com/foo", "https://api.example.com/foo"  ] },
+            components: {
+              securitySchemes: {
+                myClientCredentials: {
+                  type:      :oauth2,
+                  flow:      :application,
+                  token_url: :somewhere
+                },
+                myAuthorizationCode: {
+                  type:      :oauth2,
+                  flow:      :accessCode,
+                  token_url: :somewhere
+                },
+                myImplicit:          {
+                  type:      :oauth2,
+                  flow:      :implicit,
+                  token_url: :somewhere
+                }
               }
             }
           }
         }
       end
+
+      let(:config)   { build(:config, swagger_docs: swagger_doc) }
       let(:document) { nil }
 
-      it "converts query and path params, type: to schema: { type: }" do |example|
-        expect(subject.slice(:paths)).to match(
-          paths: {
-            "/blogs" => {
-              parameters: [{ schema: { type: :string } }],
-              post:       {
-                parameters: [{ schema: { type: :string } }],
-                summary:    "Creates a blog",
-                responses:  {
-                  "201" => {
-                    content:     {
-                      "application/vnd.my_mime" => {
-                        schema: { "$ref" => "#/definitions/blog" }
-                      },
-                      "application/json"        => {
-                        schema: { "$ref" => "#/definitions/blog" }
-                      }
-                    },
-                    description: "blog created",
-                    headers:     { schema: { type: :string } }
-                  }
-                }
-              }
-            }
-          }
-        )
-      end
-
       it "converts basePath, schemas and host to urls" do
-        expect(swagger_doc.slice(:servers)).to match(
+        expect(subject.values.first.slice(:servers)).to match(
           servers: {
             urls: ["http://api.example.com/foo", "https://api.example.com/foo"]
           }
@@ -107,7 +71,7 @@ describe Swagalicious::SwaggerFormatter do
       end
 
       it "upgrades oauth flow to flows" do
-        expect(swagger_doc.slice(:components)).to match(
+        expect(subject.values.first.slice(:components)).to match(
           components: {
             securitySchemes: {
               myClientCredentials: {
@@ -139,115 +103,31 @@ describe Swagalicious::SwaggerFormatter do
         )
       end
     end
-  end
-
-  describe "#stop" do
-    before do
-      FileUtils.rm_r(swagger_root) if File.exist?(swagger_root)
-      allow(config).to receive(:swagger_docs).and_return(
-        "v1/swagger.json" => doc_1,
-        "v2/swagger.json" => doc_2
-      )
-      allow(config).to receive(:swagger_format).and_return(swagger_format)
-      subject.stop(notification)
-    end
-
-    let(:doc_1)          { { info: { version: "v1" } } }
-    let(:doc_2)          { { info: { version: "v2" } } }
-    let(:swagger_format) { :json }
-
-    let(:notification) { double("notification") }
 
     context "with default format" do
+      before(:each) { subject }
+
       it "writes the swagger_doc(s) to file" do
-        expect(File).to exist("#{swagger_root}/v1/swagger.json")
-        expect(File).to exist("#{swagger_root}/v2/swagger.json")
-        expect { JSON.parse(File.read("#{swagger_root}/v2/swagger.json")) }.not_to raise_error
+        expect(File).to exist("#{swagger_root}/#{output_file}")
+        expect { JSON.parse(File.read("#{swagger_root}/#{output_file}")) }.not_to raise_error
       end
     end
 
     context "with yaml format" do
+      before(:each) do
+        expect(config).to receive(:swagger_format).and_return(:yaml)
+
+        subject
+      end
+
       let(:swagger_format) { :yaml }
 
       it "writes the swagger_doc(s) as yaml" do
-        expect(File).to exist("#{swagger_root}/v1/swagger.json")
-        expect { JSON.parse(File.read("#{swagger_root}/v1/swagger.json")) }.to raise_error(JSON::ParserError)
+        expect(File).to exist("#{swagger_root}/#{output_file}")
+        expect { JSON.parse(File.read("#{swagger_root}/#{output_file}")) }.to raise_error(JSON::ParserError)
         # Psych::DisallowedClass would be raised if we do not pre-process ruby symbols
-        expect { YAML.safe_load(File.read("#{swagger_root}/v1/swagger.json")) }.not_to raise_error
+        expect { YAML.safe_load(File.read("#{swagger_root}/#{output_file}")) }.not_to raise_error
       end
-    end
-
-    context "with oauth3 upgrades" do
-      let(:doc_2) do
-        {
-          paths: {
-            "/path/" => {
-              get: {
-                summary:    "Retrieve Nested Paths",
-                tags:       ["nested Paths"],
-                produces:   ["application/json"],
-                consumes:   ["application/xml", "application/json"],
-                parameters: [{
-                  in:     :body,
-                  schema: { foo: :bar }
-                }, {
-                  in: :headers
-                }]
-              }
-            }
-          }
-        }
-      end
-
-      it "removes remaining consumes/produces" do
-        expect(doc_2[:paths]["/path/"][:get].keys).to eql([:summary, :tags, :parameters, :requestBody])
-      end
-
-      it "duplicates params in: :body to requestBody from consumes list" do
-        expect(doc_2[:paths]["/path/"][:get][:parameters]).to eql([{ in: :headers }])
-        expect(doc_2[:paths]["/path/"][:get][:requestBody]).to eql(content: {
-          "application/xml"  => { schema: { foo: :bar } },
-          "application/json" => { schema: { foo: :bar } }
-        })
-      end
-    end
-
-    context "with oauth3 formData" do
-      let(:doc_2) do
-        {
-          paths: {
-            "/path/" => {
-              post: {
-                summary:    "Retrieve Nested Paths",
-                tags:       ["nested Paths"],
-                produces:   ["application/json"],
-                consumes:   ["multipart/form-data"],
-                parameters: [{
-                  in:     :formData,
-                  schema: { type: :file }
-                },{
-                  in: :headers
-                }]
-              }
-            }
-          }
-        }
-      end
-
-      it "removes remaining consumes/produces" do
-        expect(doc_2[:paths]["/path/"][:post].keys).to eql([:summary, :tags, :parameters, :requestBody])
-      end
-
-      it "duplicates params in: :formData to requestBody from consumes list" do
-        expect(doc_2[:paths]["/path/"][:post][:parameters]).to eql([{ in: :headers }])
-        expect(doc_2[:paths]["/path/"][:post][:requestBody]).to eql(content: {
-          "multipart/form-data" => { schema: { type: :file } }
-        })
-      end
-    end
-
-    after do
-      FileUtils.rm_r(swagger_root) if File.exist?(swagger_root)
     end
   end
 end

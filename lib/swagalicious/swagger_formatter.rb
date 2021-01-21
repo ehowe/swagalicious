@@ -92,6 +92,19 @@ class Swagalicious
     def metadata_to_swagger(metadata)
       response_code = metadata[:response][:code]
       response      = metadata[:response].reject { |k, _v| k == :code }
+      examples      = response.delete(:examples) || []
+
+      examples.each do |mime_type, titles|
+        titles.each do |title, example|
+          next unless response[:content][mime_type]
+
+          response[:content][mime_type][:examples] ||= {}
+
+          response[:content][mime_type][:examples][title] ||= {}
+
+          response[:content][mime_type][:examples][title][:value] = example
+        end
+      end
 
       verb      = metadata[:operation][:verb]
       operation = metadata[:operation]
@@ -125,7 +138,11 @@ class Swagalicious
 
       mime_list.each do |mime_type|
         # TODO upgrade to have content-type specific schema
-        target_node[:content][mime_type] = { schema: schema }
+        body = target_node
+          .fetch(:body, {})
+          .fetch(mime_type, {})
+
+        target_node[:content][mime_type] = { schema: schema }.merge(body)
       end
     end
 

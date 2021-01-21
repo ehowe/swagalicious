@@ -1,5 +1,8 @@
 require "bundler/setup"
+require "factory_bot"
+require "pry-byebug"
 require "rspec"
+require "securerandom"
 
 require_relative "../lib/swagalicious"
 
@@ -15,4 +18,10 @@ RSpec.configure do |config|
   end
 
   config.expose_dsl_globally = true
+
+  config.include FactoryBot::Syntax::Methods
+
+  config.before(:suite) do
+    FactoryBot.find_definitions
+  end
 end

@@ -12,50 +12,20 @@ describe Swagalicious::ExampleHelpers do
     expect(subject).to receive(:client).and_return(client)
 
     allow(response).to receive(:body).and_return("")
-    allow(response).to receive(:status).and_return(200)
-    allow(response).to receive(:headers).and_return({})
+    allow(response).to receive(:status).and_return(201)
+    allow(response).to receive(:headers).and_return({ "ACCEPT" => "application/json" })
 
     allow(Swagalicious).to receive(:config).and_return(config)
-    allow(config).to       receive(:get_swagger_doc).and_return(swagger_doc)
+    allow(config).to       receive(:get_swagger_doc).and_return(config.swagger_docs.values.first)
+    allow(config).to       receive(:get_swagger_doc_version).and_return(config.swagger_docs.values.first[:openapi])
+
+    allow(JSON::Validator).to receive(:fully_validate).and_return([])
   end
 
-  let(:config)   { double("config") }
+  let(:config)   { build(:config) }
   let(:client)   { double("Faraday") }
   let(:response) { double("Faraday::Response") }
-
-  let(:swagger_doc) do
-    {
-      swagger:             "3.0",
-      securityDefinitions: {
-        api_key: {
-          type: :apiKey,
-          name: "api_key",
-          in:   :query
-        }
-      }
-    }
-  end
-
-  let(:metadata) do
-    {
-      path_item: { template: "/blogs/{blog_id}/comments/{id}" },
-      response:  { code: 200 },
-      operation: {
-        verb:       :put,
-        summary:    "Updates a blog",
-        consumes:   ["application/json"],
-        parameters: [
-          { name: :blog_id, in: :path, type: "integer" },
-          { name: "id", in: :path, type: "integer" },
-          { name: "q1", in: :query, type: "string" },
-          { name: :blog, in: :body, schema: { type: "object" } }
-        ],
-        security:   [
-          { api_key: [] }
-        ]
-      },
-    }
-  end
+  let(:metadata) { build(:metadata) }
 
   describe "#submit_request(metadata)" do
     before do
@@ -67,7 +37,7 @@ describe Swagalicious::ExampleHelpers do
     end
 
     it "submits a request built from metadata and 'let' values" do
-      expect(client).to receive(:put).and_return(response)
+      expect(client).to receive(:post).and_return(response)
       subject.submit_request(metadata)
     end
   end

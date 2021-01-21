@@ -49,12 +49,22 @@ class Swagalicious
 
       @body = Oj.load(body, symbol_keys: true)
 
+      metadata[:paths] ||= []
+      metadata[:paths] << request[:path]
+
       if request[:payload]
         metadata[:response][:request] = Oj.load(request[:payload])
       end
 
-      metadata[:response][:examples]                   ||= {}
-      metadata[:response][:examples]["application/json"] = @body
+      metadata[:response][:examples] ||= {}
+
+      mime_types = metadata[:response][:produces] || ["application/json"]
+      full_title = "#{metadata[:operation][:summary]}: #{metadata[:description]}"
+
+      mime_types.each do |mime_type|
+        metadata[:response][:examples][mime_type] ||= {}
+        metadata[:response][:examples][mime_type][full_title] = @body
+      end
 
       # Validates response matches the proper schema
       Swagalicious::ResponseValidator.new.validate!(metadata, response)
