@@ -58,8 +58,8 @@ class Swagalicious
 
       metadata[:response][:examples] ||= {}
 
-      mime_types = metadata[:response][:produces] || ["application/json"]
-      full_title = "#{metadata[:operation][:summary]}: #{metadata[:description]}"
+      mime_types = metadata[:response][:produces]  || ["application/json"]
+      full_title = metadata[:swagger_example_name] || "#{metadata[:operation][:summary]}: #{metadata[:description]}"
 
       mime_types.each do |mime_type|
         metadata[:response][:examples][mime_type] ||= {}

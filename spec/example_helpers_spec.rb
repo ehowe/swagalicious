@@ -29,16 +29,21 @@ describe Swagalicious::ExampleHelpers do
 
   describe "#submit_request(metadata)" do
     before do
-      allow(subject).to receive(:blog_id).and_return(1)
-      allow(subject).to receive(:id).and_return(2)
-      allow(subject).to receive(:q1).and_return("foo")
-      allow(subject).to receive(:api_key).and_return("fookey")
-      allow(subject).to receive(:blog).and_return(text: "Some comment")
+      expect(client).to receive(:post).and_return(response)
+
+      subject.submit_request(metadata)
     end
 
-    it "submits a request built from metadata and 'let' values" do
-      expect(client).to receive(:post).and_return(response)
-      subject.submit_request(metadata)
+    it "has the default example name" do
+      expect(metadata[:response][:examples][metadata[:produces].first].keys.first).to eq("#{metadata[:operation][:summary]}: #{metadata[:description]}")
+    end
+
+    context "with a custom example name" do
+      let(:metadata) { build(:metadata, swagger_example_name: "test_swagger_example") }
+
+      it "has the custom example name" do
+        expect(metadata[:response][:examples][metadata[:produces].first].keys.first).to eq("test_swagger_example")
+      end
     end
   end
 end
