@@ -125,7 +125,7 @@ class Swagalicious
 
     def upgrade_response_produces!(swagger_doc, metadata)
       # Accept header
-      mime_list   = Array(metadata[:operation][:produces] || swagger_doc[:produces])
+      mime_list   = Array(metadata[:operation].delete(:produces) || swagger_doc[:produces])
       target_node = metadata[:response]
       upgrade_content!(mime_list, target_node)
       metadata[:response].delete(:schema)
