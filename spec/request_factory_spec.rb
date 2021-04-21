@@ -45,14 +45,14 @@ describe Swagalicious::RequestFactory do
       before do
         metadata[:operation][:parameters] = [
           { name: "q1", in: :query, type: :string },
-          { name: "q2", in: :query, type: :string }
+          { name: "q2", in: :query, type: :array, collectionFormat: :multi },
         ]
         allow(example).to receive(:q1).and_return("foo")
-        allow(example).to receive(:q2).and_return("bar")
+        allow(example).to receive(:q2).and_return(%w(bar baz))
       end
 
       it "builds the query string from example values" do
-        expect(request[:path]).to eq("/blogs?q1=foo&q2=bar")
+        expect(request[:path]).to eq("/blogs?q1=foo&q2=bar&q2=baz")
       end
     end
 

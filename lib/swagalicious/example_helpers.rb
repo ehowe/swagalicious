@@ -52,16 +52,22 @@ class Swagalicious
       metadata[:paths] ||= []
       metadata[:paths] << request[:path]
 
-      if request[:payload]
-        metadata[:response][:request] = Oj.load(request[:payload])
-      end
-
-      metadata[:response][:examples] ||= {}
+      metadata[:response][:requestBody] ||= {}
+      metadata[:response][:examples]    ||= {}
 
       mime_types = metadata[:response][:produces]  || ["application/json"]
       full_title = metadata[:swagger_example_name] || "#{metadata[:operation][:summary]}: #{metadata[:description]}"
 
       mime_types.each do |mime_type|
+        if request[:payload]
+          metadata[:response][:requestBody][:content]                                   ||= {}
+          metadata[:response][:requestBody][:content][mime_type]                        ||= {}
+          metadata[:response][:requestBody][:content][mime_type][:examples]             ||= {}
+          metadata[:response][:requestBody][:content][mime_type][:examples][full_title] ||= {}
+
+          metadata[:response][:requestBody][:content][mime_type][:examples][full_title][:value] = Oj.load(request[:payload]).dup
+        end
+
         metadata[:response][:examples][mime_type] ||= {}
         metadata[:response][:examples][mime_type][full_title] = @body
       end

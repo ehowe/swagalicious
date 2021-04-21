@@ -31,27 +31,6 @@ class Swagalicious
        upgrade_response_produces!(doc, metadata)
        upgrade_request_type!(metadata)
 
-       unless doc_version(doc).start_with?("2")
-         doc[:paths]&.each_pair do |_k, v|
-           v.each_pair do |_verb, value|
-             is_hash = value.is_a?(Hash)
-             if is_hash && value.dig(:parameters)
-               schema_param = value.dig(:parameters)&.find { |p| (p[:in] == :body || p[:in] == :formData) && p[:schema] }
-               mime_list    = value.dig(:consumes)
-               if value && schema_param && mime_list
-                 value[:requestBody] = { content: {} } unless value.dig(:requestBody, :content)
-                 mime_list.each do |mime|
-                   value[:requestBody][:content][mime] = { schema: schema_param[:schema] }
-                 end
-               end
-
-               value[:parameters].reject! { |p| p[:in] == :body || p[:in] == :formData }
-             end
-             remove_invalid_operation_keys!(value)
-           end
-         end
-       end
-
        doc.deep_merge!(metadata_to_swagger(metadata))
     end
 
@@ -93,6 +72,7 @@ class Swagalicious
       response_code = metadata[:response][:code]
       response      = metadata[:response].reject { |k, _v| k == :code }
       examples      = response.delete(:examples) || []
+      body          = response.delete(:requestBody) || {}
 
       examples.each do |mime_type, titles|
         titles.each do |title, example|
@@ -110,6 +90,20 @@ class Swagalicious
       operation = metadata[:operation]
         .reject { |k, _v| k == :verb }
         .merge(responses: { response_code => response })
+
+      is_hash = operation.is_a?(Hash)
+      if is_hash && operation.dig(:parameters)
+        schema_param = operation.dig(:parameters)&.find { |p| (p[:in] == :body || p[:in] == :formData) && p[:schema] }
+        mime_list    = operation.dig(:consumes)
+        if operation && schema_param && mime_list
+          operation[:requestBody] = { content: {} }
+          mime_list.each do |mime|
+            operation[:requestBody][:content][mime] = { schema: schema_param[:schema] }.merge((body.dig(:content, mime) || {}))
+          end
+        end
+
+        operation[:parameters].reject! { |p| p[:in] == :body || p[:in] == :formData }
+      end
 
       path_template = metadata[:path_item][:template]
       path_item     = metadata[:path_item]
