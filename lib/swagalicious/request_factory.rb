@@ -86,7 +86,7 @@ class Swagalicious
     end
 
     def add_path(request, metadata, swagger_doc, parameters, example)
-      template = (swagger_doc[:basePath] || "") + metadata[:path_item][:template]
+      template = (swagger_doc[:basePath] || (swagger_doc[:servers]&.first || {})[:url] || "") + metadata[:path_item][:template]
 
       request[:path] = template.tap do |path_template|
         parameters.select { |p| p[:in] == :path }.each do |p|
