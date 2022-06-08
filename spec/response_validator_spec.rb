@@ -12,6 +12,7 @@ describe Swagalicious::ResponseValidator do
   let(:config)      { double("config") }
   let(:swagger_doc) { {} }
   let(:example)     { double("example") }
+  let(:properties)  { { type: :string } }
   let(:metadata) do
     {
       response: {
@@ -19,11 +20,45 @@ describe Swagalicious::ResponseValidator do
         headers: { "X-Rate-Limit-Limit" => { type: :integer } },
         schema:  {
           type:       :object,
-          properties: { text: { type: :string } },
+          properties: { text: properties },
           required:   ["text"]
         }
       }
     }
+  end
+
+  describe "null" do
+    context "with nullable" do
+      let(:properties) { { type: :string, nullable: true } }
+      let(:call)       { subject.validate!(metadata, response) }
+      let(:response) do
+        OpenStruct.new(
+          status: "200",
+          headers: { "X-Rate-Limit-Limit" => "10" },
+          body: '{"text":null}'
+        )
+      end
+
+      context "response matches metadata" do
+        it { expect { call }.to_not raise_error }
+      end
+    end
+
+    context "with null" do
+      let(:properties) { { type: [:string, :null] } }
+      let(:call)       { subject.validate!(metadata, response) }
+      let(:response) do
+        OpenStruct.new(
+          status: "200",
+          headers: { "X-Rate-Limit-Limit" => "10" },
+          body: '{"text":null}'
+        )
+      end
+
+      context "response matches metadata" do
+        it { expect { call }.to_not raise_error }
+      end
+    end
   end
 
   describe "#validate!(metadata, response)" do
