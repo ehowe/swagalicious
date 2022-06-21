@@ -1,5 +1,5 @@
 require "faraday"
-require "faraday/adapter/rack"
+require "faraday/rack"
 require "rack"
 require "oj"
 
@@ -25,7 +25,7 @@ class Swagalicious
 
     def client
       @client ||= Faraday.new do |b|
-        b.adapter Faraday::Adapter::Rack, app
+        b.adapter(:rack)
       end
     end
 
@@ -68,7 +68,7 @@ class Swagalicious
           metadata[:response][:requestBody][:content][mime_type][:examples][full_title][:value] = Oj.load(request[:payload]).dup
         end
 
-        metadata[:response][:examples][mime_type] ||= {}
+        metadata[:response][:examples][mime_type]           ||= {}
         metadata[:response][:examples][mime_type][full_title] = @body
       end
 

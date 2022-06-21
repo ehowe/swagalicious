@@ -4,7 +4,7 @@ Gem::Specification.new do |spec|
   spec.name          = "swagalicious"
   spec.version       = Swagalicious::VERSION
   spec.authors       = ["Eugene Howe"]
-  spec.email         = ["eugene@xtreme-computers.net"]
+  spec.email         = ["eugene.howe@protonmail.com"]
 
   spec.summary               = %q{RSwag without Rails}
   spec.description           = %q{This gem is almost a straight copy and paste of https://github.com/rswag/rswag/tree/master/rswag-specs with the Rails specific code stripped out so it can be used in Rack applications that don't use Rails.}
@@ -24,10 +24,11 @@ Gem::Specification.new do |spec|
   end
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "faraday",     "~> 1.3.0"
+  spec.add_dependency "faraday", "~> 2.0"
+  spec.add_dependency "faraday-rack"
   spec.add_dependency "json-schema", "~> 2.8.1"
   spec.add_dependency "oj",          "~> 3.11.0"
-  spec.add_dependency "rspec",       "~> 3.10.0"
+  spec.add_dependency "rspec",       "~> 3"
 
   spec.add_development_dependency "factory_bot", "~> 6.1.0"
   spec.add_development_dependency "pry-byebug",  "~> 3.9.0"
