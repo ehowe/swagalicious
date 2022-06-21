@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    swagalicious (0.4.5)
+    swagalicious (0.4.6)
       faraday (~> 2.0)
       faraday-rack
       json-schema

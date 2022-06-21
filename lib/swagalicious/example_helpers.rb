@@ -20,25 +20,27 @@ class Swagalicious
     end
 
     def app
-      @app ||= Rack::Builder.parse_file("config.ru").first
+      @app ||= defined?(Rails) ? Rails.application : Rack::Builder.parse_file("config.ru").first
     end
 
     def client
       @client ||= Faraday.new do |b|
-        b.adapter(:rack)
+        b.adapter Faraday::Adapter::Rack, app
       end
     end
 
     def submit_request(metadata, mocked: false, mock_name: nil)
-      request = RequestFactory.new.build_request(metadata, self)
+      request  = RequestFactory.new.build_request(metadata, self)
+      uri      = URI.parse(request[:path])
+      uri.path = uri.path.gsub("//", "/")
 
       response = if mocked
-                   file_name = File.basename(mock_name || URI.parse(request[:path]).path)
+                   file_name = File.basename(mock_name || path)
 
                    MockResponse.new(file_name)
                  else
                    client.public_send(request[:verb]) do |req|
-                     req.url request[:path].gsub("//", "/")
+                     req.url uri.to_s
                      req.headers = request[:headers]
                      req.body    = request[:payload]
                    end
