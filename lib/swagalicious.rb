@@ -4,7 +4,8 @@ require_relative "./swagalicious/version"
 
 begin
   require "rspec/rails"
-rescue nil
+rescue LoadError
+  nil
 end
 
 class Swagalicious
