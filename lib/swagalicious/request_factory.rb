@@ -39,8 +39,9 @@ class Swagalicious
       schemes      = security_version(scheme_names, swagger_doc)
 
       schemes.map do |scheme|
-        param = (scheme[:type] == :apiKey) ? scheme.slice(:name, :in) : { name: "Authorization", in: :header }
-        param.merge(type: :string, required: requirements.one?)
+        param = (scheme[:type] == :apiKey) ? scheme.slice(:name, :in, :required) : { name: "Authorization", in: :header }
+        param.merge(required: requirements.one?) unless param.has_key?(:required)
+        param.merge(type: :string)
       end
     end
 
