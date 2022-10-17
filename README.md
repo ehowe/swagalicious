@@ -25,7 +25,7 @@ Or install it yourself as:
 Add the following to your `spec_helper.rb` or add a new `swagger_helper.rb`
 
 ```ruby
-require 'swagalicious`
+require 'swagalicious'
 
 RSpec.configure do |c|
   c.swagger_root = "public/swagger_docs" # This is the relative path where the swagger docs will be output
