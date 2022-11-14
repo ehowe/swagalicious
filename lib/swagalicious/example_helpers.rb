@@ -20,7 +20,13 @@ class Swagalicious
     end
 
     def app
-      @app ||= defined?(Rails) ? Rails.application : Rack::Builder.parse_file("config.ru").first
+      @app ||= if defined?(Rails)
+                 Rails.application
+               elsif Rack::RELEASE >= "3.0.0"
+                 Rack::Builder.parse_file("config.ru")
+               else
+                 Rack::Builder.parse_file("config.ru").first
+               end
     end
 
     def client
