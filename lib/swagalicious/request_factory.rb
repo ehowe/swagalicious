@@ -91,12 +91,14 @@ class Swagalicious
 
       request[:path] = template.tap do |path_template|
         parameters.select { |p| p[:in] == :path }.each do |p|
-          path_template.gsub!("{#{p[:name]}}", example.send(p[:name]).to_s)
+          variable_name = p[:variable_name] || p[:name]
+          path_template.gsub!("{#{p[:name]}}", example.send(variable_name).to_s)
         end
 
         parameters.select { |p| p[:in] == :query }.each_with_index do |p, i|
+          variable_name = p[:variable_name] || p[:name]
           path_template.concat(i.zero? ? "?" : "&")
-          path_template.concat(build_query_string_part(p, example.send(p[:name])))
+          path_template.concat(build_query_string_part(p, example.send(variable_name)))
         end
       end
     end
@@ -122,7 +124,11 @@ class Swagalicious
     def add_headers(request, metadata, swagger_doc, parameters, example)
       tuples = parameters
         .select { |p| p[:in] == :header }
-        .map { |p| [p[:name], example.send(p[:name]).to_s] }
+        .map do |p|
+          variable_name = p[:variable_name] || p[:name]
+
+          [p[:name], example.send(variable_name).to_s]
+        end
 
       # Accept header
       produces = metadata[:operation][:produces] || swagger_doc[:produces]

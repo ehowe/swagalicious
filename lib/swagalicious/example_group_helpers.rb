@@ -57,8 +57,10 @@ class Swagalicious
     end
 
     def header(name, attributes)
-      metadata[:response][:headers]     ||= {}
-      metadata[:response][:headers][name] = attributes
+      header_name = attributes.delete(:variable) || name
+
+      metadata[:response][:headers]            ||= {}
+      metadata[:response][:headers][header_name] = attributes
     end
 
     # NOTE: Similar to 'description', 'examples' need to handle the case when
