@@ -1,13 +1,66 @@
 require "faraday"
 require "faraday/rack"
 require "rack"
+require "json"
 require "oj"
+require "ox"
+require "yaml"
+require "active_support/core_ext/hash/indifferent_access"
 
 require_relative "response_validator"
 
 class Swagalicious
   module ExampleHelpers
     include Rack::Test::Methods
+
+    def self.raise_invalid_response(response:, request:, message:)
+      raise InvalidResponseTypeError.new(
+        headers: response.headers,
+        message: message,
+        request: request,
+        response: response,
+        status: response.status,
+      )
+    end
+
+    class InvalidResponseTypeError < RuntimeError
+      attr_reader :status, :_message, :headers, :response, :request
+
+      def initialize(status:, message:, headers:, response:, request:)
+        @headers  = headers
+        @_message = message
+        @request  = request
+        @response = response
+        @status   = status
+      end
+
+      def inspect
+        JSON.pretty_generate(to_h)
+      end
+
+      def to_h
+        hash = {
+          headers: headers.to_h,
+          message: _message,
+          request: request.slice(:verb, :path, :headers),
+          status:  status,
+        }
+
+        if parsed_body = Parser.new(request: request, response: response).parse(raise_on_invalid: false)
+          hash[:parsed_response] = parsed_body
+        end
+
+        hash
+      end
+
+      def to_s
+        "Received unexpected or unparseable response with status code #{status} for #{request[:verb].upcase} #{request[:path]}: #{_message}"
+      end
+
+      def message
+        inspect
+      end
+    end
 
     class MockResponse
       attr_reader :body, :status, :headers
@@ -16,6 +69,44 @@ class Swagalicious
         @body    = File.read(File.expand_path("#{File.join(ENV["MOCK_PATH"], file_name)}.json", __FILE__))
         @status  = 200
         @headers = {}
+      end
+    end
+
+    class Parser
+      attr_accessor :body
+      attr_reader :content_type, :request, :response
+
+      def initialize(response:, request:)
+        @content_type = response.headers["Content-Type"]
+        @body         = response.body
+        @response     = response
+        @request      = request
+      end
+
+      def parse(raise_on_invalid: true)
+        # Redirections shouldnt be parsed
+        if response.status >= 300 && response.status <= 399
+          return
+        end
+
+        case content_type
+        when /json/
+          self.body = "{}" if self.body.empty?
+
+          Oj.load(self.body, symbol_keys: true)
+        when /ya?ml/
+          body = "---" if self.body.empty?
+
+          (YAML.load(self.body) || {}).with_indifferent_access
+        when /xml/
+          (Ox.load(self.body, mode: :hash_no_attrs) || {}).with_indifferent_access
+        when "", nil
+          self.body
+        else
+          return unless raise_on_invalid
+
+          Swagalicious::ExampleHelpers.raise_invalid_response(response: response, request: request, message: "Invalid Content-Type header #{response.headers["Content-Type"]}")
+        end
       end
     end
 
@@ -52,10 +143,9 @@ class Swagalicious
                    end
                  end
 
-      body = response.body
-      body = "{}" if body.empty?
+      Swagalicious::ExampleHelpers.raise_invalid_response(response: response, request: request, message: "Received unexpected response code") unless response.status.to_s == metadata[:response][:code].to_s
 
-      @body = Oj.load(body, symbol_keys: true)
+      @body = Parser.new(request: request, response: response).parse
 
       metadata[:paths] ||= []
       metadata[:paths] << request[:path]

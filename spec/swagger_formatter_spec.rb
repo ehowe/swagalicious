@@ -22,7 +22,7 @@ describe Swagalicious::SwaggerFormatter do
     let(:notification) { build(:notification) }
 
     context "with the document tag set to false" do
-      let(:document)    { false }
+      let(:document) { false }
 
       it "does not update the swagger doc" do
         expect(swagger_doc).to match({ openapi: "3.0.1" })
@@ -35,7 +35,7 @@ describe Swagalicious::SwaggerFormatter do
           "test.json" => {
             openapi:    "3.0.1",
             produces:   ["application/vnd.my_mime", "application/json"],
-            servers:    { urls: [ "http://api.example.com/foo", "https://api.example.com/foo"  ] },
+            servers:    { urls: [ "http://api.example.com/foo", "https://api.example.com/foo" ] },
             components: {
               securitySchemes: {
                 myClientCredentials: {

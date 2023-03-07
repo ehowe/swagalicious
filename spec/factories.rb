@@ -3,12 +3,15 @@ FactoryBot.define do
   end
 
   factory :metadata, class: Hash do
+    transient do
+      code { "201" }
+    end
     description  { "Description" }
      document    { nil }
      operation   { { verb: :post, summary: "Creates a blog", parameters: [{ type: :string }], produces: [ "application/json" ] } }
      path_item   { { template: "/blogs", parameters: [{ type: :string }] } }
      produces    { ["application/json"] }
-     response    { { code: "201", description: "blog created", headers: { "ACCEPT" => "application/json" }, schema: { "$ref" => "#/definitions/blog" } } }
+     response    { { code: code, description: "blog created", headers: { "ACCEPT" => "application/json" }, schema: { "$ref" => "#/definitions/blog" } } }
      swagger_doc { "test.json" }
 
      initialize_with { attributes }
