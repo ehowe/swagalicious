@@ -35,11 +35,11 @@ class Swagalicious
 
     def derive_security_params(metadata, swagger_doc)
       requirements = metadata[:operation][:security] || swagger_doc[:security] || []
-      scheme_names = requirements.flat_map(&:keys)
+      scheme_names = requirements.flat_map { |r| r.has_key?(:type) ? r[:type] : r.keys }
       schemes      = security_version(scheme_names, swagger_doc)
 
       schemes.map do |scheme|
-        param = (scheme[:type] == :apiKey) ? scheme.slice(:name, :in, :required) : { name: "Authorization", in: :header }
+        param = (scheme[:type] == :apiKey) ? scheme.slice(:name, :in, :required, :force_name) : { name: "Authorization", in: :header }
         param.merge(required: requirements.one?) unless param.has_key?(:required)
         param.merge(type: :string)
       end
@@ -127,7 +127,7 @@ class Swagalicious
         .map do |p|
           variable_name = p[:variable_name] || p[:name]
 
-          [p[:name], example.send(variable_name).to_s]
+          [p[:name], example.send(variable_name).to_s, p[:force_name]]
         end
 
       # Accept header
@@ -145,15 +145,16 @@ class Swagalicious
       end
 
       # Rails test infrastructure requires rackified headers
-      rackified_tuples = tuples.map do |pair|
+      rackified_tuples = tuples.map do |tuple|
         [
-          case pair[0]
+          case tuple[0]
           when "Accept" then "HTTP_ACCEPT"
           when "Content-Type" then "CONTENT_TYPE"
-          when "Authorization" then "HTTP_AUTHORIZATION"
-          else pair[0]
+          when "Authorization"
+            tuple[2] ? tuple[0] : "HTTP_AUTHORIZATION"
+          else tuple[0]
           end,
-          pair[1]
+          tuple[1]
         ]
       end
 

@@ -236,9 +236,13 @@ describe Swagalicious::RequestFactory do
     end
 
     context "apiKey" do
+      let(:extra) { { } }
+      let(:key_location) { :header }
+
       before do
-        swagger_doc[:securityDefinitions] = { apiKey: { type: :apiKey, name: "api_key", in: key_location } }
-        metadata[:operation][:security]   = [apiKey: []]
+        swagger_doc[:components]                 ||= {}
+        swagger_doc[:components][:securitySchemes] = { apiKey: { type: :apiKey, name: "api_key", in: key_location, **extra } }
+        metadata[:operation][:security]            = [apiKey: []]
         allow(example).to receive(:api_key).and_return("foobar")
       end
 
@@ -251,16 +255,12 @@ describe Swagalicious::RequestFactory do
       end
 
       context "in header" do
-        let(:key_location) { :header }
-
         it "adds name and example value to the headers" do
           expect(request[:headers]).to eq("api_key" => "foobar")
         end
       end
 
       context "in header with auth param already added" do
-        let(:key_location) { :header }
-
         before do
           metadata[:operation][:parameters] = [
             { name: "q1", in: :query, type: :string },
@@ -273,6 +273,16 @@ describe Swagalicious::RequestFactory do
         it "adds authorization parameter only once" do
           expect(request[:headers]).to eq("api_key" => "foobar")
           expect(metadata[:operation][:parameters].size).to eq 2
+        end
+      end
+
+      context "in header with a forced header name" do
+        let(:extra)      { { force_name: true, name: "ForcedName" } }
+
+        before { allow(example).to receive(:ForcedName).and_return("ForcedValue") }
+
+        it "sets the header to the correct name" do
+          expect(request[:headers]).to eq("ForcedName" => "ForcedValue")
         end
       end
     end

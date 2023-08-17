@@ -7,7 +7,7 @@ PATH
       json-schema
       oj (~> 3.11.0)
       ox (~> 2.14.14)
-      rack-test (~> 2.0.2)
+      rack-test
       rspec (~> 3)
 
 GEM
