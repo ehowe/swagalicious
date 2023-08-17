@@ -100,7 +100,7 @@ class Swagalicious
           (YAML.load(self.body) || {}).with_indifferent_access
         when /xml/
           (Ox.load(self.body, mode: :hash_no_attrs) || {}).with_indifferent_access
-        when "", nil
+        when "", nil, /html/
           self.body
         else
           return unless raise_on_invalid
