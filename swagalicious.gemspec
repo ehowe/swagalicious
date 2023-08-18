@@ -27,8 +27,8 @@ Gem::Specification.new do |spec|
   spec.add_dependency "faraday", "~> 2.0"
   spec.add_dependency "faraday-rack"
   spec.add_dependency "json-schema"
-  spec.add_dependency "oj", "~> 3.11.0"
-  spec.add_dependency "ox", "~> 2.14.14"
+  spec.add_dependency "oj"
+  spec.add_dependency "ox"
   spec.add_dependency "rack-test"
   spec.add_dependency "rspec", "~> 3"
 
