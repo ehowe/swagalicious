@@ -32,8 +32,8 @@ Gem::Specification.new do |spec|
   spec.add_dependency "rack-test"
   spec.add_dependency "rspec", "~> 3"
 
-  spec.add_development_dependency "rubocop", "~> 1.48.0"
-  spec.add_development_dependency "rubocop-rspec", "~> 2.19.0"
-  spec.add_development_dependency "factory_bot", "~> 6.1.0"
-  spec.add_development_dependency "pry-byebug",  "~> 3.9.0"
+  spec.add_development_dependency "rubocop", "~> 1.48"
+  spec.add_development_dependency "rubocop-rspec", "~> 2.19"
+  spec.add_development_dependency "factory_bot", "~> 6.1"
+  spec.add_development_dependency "pry-byebug"
 end
