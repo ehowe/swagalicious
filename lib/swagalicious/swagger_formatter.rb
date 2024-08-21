@@ -45,7 +45,7 @@ class Swagalicious
         FileUtils.mkdir_p dirname unless File.exist?(dirname)
 
         File.open(file_path, "w") do |file|
-          file.write(pretty_generate(merged_doc))
+          file.write(pretty_generate(merged_doc.except(:metadata)))
         end
 
         @output.puts "Swagger doc generated at #{file_path}"
@@ -104,6 +104,7 @@ class Swagalicious
 
         operation[:parameters].reject! { |p| p[:in] == :body || p[:in] == :formData }
       end
+      remove_invalid_operation_keys!(operation)
 
       path_template = metadata[:path_item][:template]
       path_item     = metadata[:path_item]
@@ -119,7 +120,7 @@ class Swagalicious
 
     def upgrade_response_produces!(swagger_doc, metadata)
       # Accept header
-      mime_list   = Array(metadata[:operation].delete(:produces) || swagger_doc[:produces])
+      mime_list   = Array(metadata[:operation].delete(:produces) || swagger_doc.dig(:metadata, :produces))
       target_node = metadata[:response]
       upgrade_content!(mime_list, target_node)
       metadata[:response].delete(:schema)
@@ -157,7 +158,7 @@ class Swagalicious
     def upgrade_servers!(swagger_doc)
       return unless swagger_doc[:servers].nil? && swagger_doc.key?(:schemes)
 
-      puts "Swagalicious: WARNING: schemes, host, and basePath are replaced in OpenAPI3! Rename to array of servers[{url}] (in swagger_helper.rb)"
+      @config.logger.warn "Swagalicious: WARNING: schemes, host, and basePath are replaced in OpenAPI3! Rename to array of servers[{url}] (in swagger_helper.rb)"
 
       swagger_doc[:servers] = { urls: [] }
       swagger_doc[:schemes].each do |scheme|
@@ -177,17 +178,17 @@ class Swagalicious
       schemes.each do |name, v|
         next unless v.key?(:flow)
 
-        puts "Swagalicious: WARNING: securityDefinitions flow is replaced in OpenAPI3! Rename to components/securitySchemes/#{name}/flows[] (in swagger_helper.rb)"
+        @config.logger.warn "Swagalicious: WARNING: securityDefinitions flow is replaced in OpenAPI3! Rename to components/securitySchemes/#{name}/flows[] (in swagger_helper.rb)"
 
         flow = swagger_doc[:components][:securitySchemes][name].delete(:flow).to_s
 
         if flow == "accessCode"
-          puts "Swagalicious: WARNING: securityDefinitions accessCode is replaced in OpenAPI3! Rename to clientCredentials (in swagger_helper.rb)"
+          @config.logger.warn "Swagalicious: WARNING: securityDefinitions accessCode is replaced in OpenAPI3! Rename to clientCredentials (in swagger_helper.rb)"
           flow = "authorizationCode"
         end
 
         if flow == "application"
-          puts "Swagalicious: WARNING: securityDefinitions application is replaced in OpenAPI3! Rename to authorizationCode (in swagger_helper.rb)"
+          @config.logger.warn "Swagalicious: WARNING: securityDefinitions application is replaced in OpenAPI3! Rename to authorizationCode (in swagger_helper.rb)"
           flow = "clientCredentials"
         end
 

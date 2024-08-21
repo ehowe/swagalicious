@@ -38,6 +38,13 @@ class Swagalicious
                           end
     end
 
+    def logger
+      @swagger_format ||= begin
+                            @rspec_config.swagalicious_logger = ::Logger.new($stdout) if @rspec_config.swagalicious_logger.nil?
+                            @rspec_config.swagalicious_logger
+                          end
+    end
+
     def get_swagger_doc(name)
       return swagger_docs.values.first if name.nil?
       raise ConfigurationError, "Unknown swagger_doc '#{name}'" unless swagger_docs[name]

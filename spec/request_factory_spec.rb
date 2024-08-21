@@ -7,7 +7,7 @@ describe Swagalicious::RequestFactory do
   before do
     allow(config).to receive(:get_swagger_doc).and_return(swagger_doc)
   end
-  let(:config)      { double("config") }
+  let(:config)      { build(:config) }
   let(:swagger_doc) { { swagger: "3.0" } }
   let(:example)     { double("example") }
   let(:metadata) do
@@ -44,8 +44,8 @@ describe Swagalicious::RequestFactory do
     context "'query' parameters" do
       before do
         metadata[:operation][:parameters] = [
-          { name: "q1", in: :query, type: :string },
-          { name: "q2", in: :query, type: :array, collectionFormat: :multi },
+          { name: "q1", in: :query, schema: { type: :string } },
+          { name: "q2", in: :query, schema: { type: :array, items: { type: :string } }, style: :form, explode: true },
         ]
         allow(example).to receive(:q1).and_return("foo")
         allow(example).to receive(:q2).and_return(%w(bar baz))
@@ -59,47 +59,61 @@ describe Swagalicious::RequestFactory do
     context "'query' parameters of type 'array'" do
       before do
         metadata[:operation][:parameters] = [
-          { name: "things", in: :query, type: :array, collectionFormat: collection_format }
+          { name: "things", in: :query, schema: { type: :array, items: { type: :string } }, style: style, explode: explode }
         ]
         allow(example).to receive(:things).and_return(["foo", "bar"])
       end
 
-      context "collectionFormat = csv" do
-        let(:collection_format) { :csv }
+      context "style=form explode=false" do
+        let(:style)   { :form }
+        let(:explode) { false }
 
         it "formats as comma separated values" do
           expect(request[:path]).to eq("/blogs?things=foo,bar")
         end
       end
 
-      context "collectionFormat = ssv" do
-        let(:collection_format) { :ssv }
+      context "style=form explode=true" do
+        let(:style)   { :form }
+        let(:explode) { true }
+
+        it "formats as comma separated values" do
+          expect(request[:path]).to eq("/blogs?things=foo&things=bar")
+        end
+      end
+
+      context "style=spaceDelimited explode=false" do
+        let(:style) { :spaceDelimited }
+        let(:explode) { false }
 
         it "formats as space separated values" do
           expect(request[:path]).to eq("/blogs?things=foo bar")
         end
       end
 
-      context "collectionFormat = tsv" do
-        let(:collection_format) { :tsv }
+      context "style=spaceDelimited explode=true" do
+        let(:style) { :spaceDelimited }
+        let(:explode) { true }
 
-        it "formats as tab separated values" do
-          expect(request[:path]).to match(/\/blogs\?things=foo\tbar/)
+        it "formats as default" do
+          expect(request[:path]).to eq("/blogs?things=foo&things=bar")
         end
       end
 
-      context "collectionFormat = pipes" do
-        let(:collection_format) { :pipes }
+      context "style=pipeDelimited explode=false" do
+        let(:style) { :pipeDelimited }
+        let(:explode) { false }
 
         it "formats as pipe separated values" do
           expect(request[:path]).to eq("/blogs?things=foo|bar")
         end
       end
 
-      context "collectionFormat = multi" do
-        let(:collection_format) { :multi }
+      context "style=pipeDelimited explode=true" do
+        let(:style) { :pipeDelimited }
+        let(:explode) { true }
 
-        it "formats as multiple parameter instances" do
+        it "formats as default" do
           expect(request[:path]).to eq("/blogs?things=foo&things=bar")
         end
       end
@@ -236,7 +250,7 @@ describe Swagalicious::RequestFactory do
     end
 
     context "apiKey" do
-      let(:extra) { { } }
+      let(:extra)        { { } }
       let(:key_location) { :header }
 
       before do

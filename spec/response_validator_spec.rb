@@ -9,7 +9,7 @@ describe Swagalicious::ResponseValidator do
     allow(config).to receive(:get_swagger_doc).and_return(swagger_doc)
     allow(config).to receive(:get_swagger_doc_version).and_return("3.0")
   end
-  let(:config)      { double("config") }
+  let(:config)      { build(:config) }
   let(:swagger_doc) { {} }
   let(:example)     { double("example") }
   let(:properties)  { { type: :string } }

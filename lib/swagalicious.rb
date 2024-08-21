@@ -30,6 +30,7 @@ class Swagalicious
     c.add_setting :swagger_root
     c.add_setting :swagger_docs
     c.add_setting :swagger_dry_run
+    c.add_setting :swagalicious_logger
 
     if defined?(Rails) && defined?(RSpec::Rails)
       c.include RSpec::Rails::RequestExampleGroup, type: :doc

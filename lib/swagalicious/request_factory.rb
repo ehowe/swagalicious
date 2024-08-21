@@ -47,7 +47,7 @@ class Swagalicious
 
     def security_version(scheme_names, swagger_doc)
       if swagger_doc.key?(:securityDefinitions)
-        puts "Swagalicious: WARNING: securityDefinitions is replaced in OpenAPI3! Rename to components/securitySchemes (in swagger_helper.rb)"
+        @config.logger.warn "Swagalicious: WARNING: securityDefinitions is replaced in OpenAPI3! Rename to components/securitySchemes (in swagger_helper.rb)"
         swagger_doc[:components] ||= { securitySchemes: swagger_doc[:securityDefinitions] }
         swagger_doc.delete(:securityDefinitions)
       end
@@ -65,7 +65,7 @@ class Swagalicious
 
     def key_version(ref, swagger_doc)
       if ref.start_with?("#/parameters/")
-        puts "Swagalicious: WARNING: #/parameters/ refs are replaced in OpenAPI3! Rename to #/components/parameters/"
+        @config.logger.warn "Swagalicious: WARNING: #/parameters/ refs are replaced in OpenAPI3! Rename to #/components/parameters/"
         ref.sub("#/parameters/", "").to_sym
       else
         ref.sub("#/components/parameters/", "").to_sym
@@ -74,7 +74,7 @@ class Swagalicious
 
     def definition_version(swagger_doc)
       if swagger_doc.key?(:parameters)
-        puts "Swagalicious: WARNING: parameters is replaced in OpenAPI3! Rename to components/parameters (in swagger_helper.rb)"
+        @config.logger.warn "Swagalicious: WARNING: parameters is replaced in OpenAPI3! Rename to components/parameters (in swagger_helper.rb)"
         swagger_doc[:parameters]
       else
         components = swagger_doc[:components] || {}
@@ -105,19 +105,48 @@ class Swagalicious
 
     def build_query_string_part(param, value)
       name = param[:name]
-      return "#{name}=#{value}" unless param[:type].to_sym == :array
+      if param[:type]
+        @config.logger.warn "Swagalicious: WARNING: type is replaced in OpenAPI3! Rename to schema[type] in query param definition for #{name}"
+        param[:schema]      ||= {}
+        param[:schema][:type] = param.delete(:type)
+      end
+      return "#{name}=#{value}" unless (param.dig(:schema, :type) || "").to_sym == :array
 
-      case param[:collectionFormat]
-      when :ssv
-        "#{name}=#{value.join(" ")}"
-      when :tsv
-        "#{name}=#{value.join("\t")}"
-      when :pipes
-        "#{name}=#{value.join("|")}"
-      when :multi
-        value.map { |v| "#{name}=#{v}" }.join("&")
+      unless param[:schema]
+        @config.logger.warn "Schema was not specified for #{name}"
+      end
+
+      if param[:collection_format] || param[:collectionFormat]
+        @config.logger.warn "Swagalicious: WARNING: collection_format is replaced in OpenAPI3! Rename to style/explode in query param definition for #{name}"
+        format = params[:collection_format] || param[:collectionFormat]
+        case format
+        when :multi
+          param[:style]   = :form
+          param[:explode] = true
+        when :ssv
+          param[:style]   = :spaceDelimited
+          param[:explode] = false
+        when :pipes
+          param[:style]   = :pipeDelimited
+          param[:explode] = false
+        else
+          param[:style]   = :form
+          param[:explode] = false
+        end
+      end
+
+      style   = param[:style] || :form
+      explode = param[:explode] || false
+
+      case style
+      when :spaceDelimited
+        explode ? value.map { |v| "#{name}=#{v}" }.join("&") : "#{name}=#{value.join(" ")}"
+      when :pipeDelimited
+        explode ? value.map { |v| "#{name}=#{v}" }.join("&") : "#{name}=#{value.join("|")}"
+      when :form
+        explode ? value.map { |v| "#{name}=#{v}" }.join("&") : "#{name}=#{value.join(",")}"
       else
-        "#{name}=#{value.join(",")}" # csv is default
+        raise "Invalid combination"
       end
     end
 

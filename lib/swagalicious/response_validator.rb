@@ -52,7 +52,7 @@ class Swagalicious
         swagger_doc.slice(:definitions)
       else # Openapi3
         if swagger_doc.key?(:definitions)
-          puts "Swagger::Specs: WARNING: definitions is replaced in OpenAPI3! Rename to components/schemas (in swagger_helper.rb)"
+          @config.logger.warn "Swagger::Specs: WARNING: definitions is replaced in OpenAPI3! Rename to components/schemas (in swagger_helper.rb)"
           swagger_doc.slice(:definitions)
         else
           components = swagger_doc[:components] || {}

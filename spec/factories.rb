@@ -38,5 +38,7 @@ FactoryBot.define do
     } }
 
     swagger_root { File.expand_path("../tmp/swagger", __dir__) }
+
+    logger { Logger.new($stdout)}
   end
 end
